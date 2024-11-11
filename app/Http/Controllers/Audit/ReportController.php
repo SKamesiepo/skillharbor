@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Audit;
 
 use App\Http\Controllers\Controller;
 use App\Models\audit\assessment;
-use App\Models\Audit\Division;
+use Illuminate\Support\Facades\Auth;
 use App\Models\audit\qualification;
 use App\Models\audit\skill;
 use App\Models\User;
@@ -480,14 +480,12 @@ class ReportController extends Controller
         'Expires'             => '0',
     ];
 
-    // Query users associated with the specified department
     $users = User::with(['qualifications', 'department'])
                  ->whereHas('department', function ($query) use ($departmentName) {
                      $query->where('department_name', $departmentName);
                  })
                  ->get();
 
-    // Determine the maximum number of qualifications any user has for CSV formatting
     $maxQualifications = $users->max(function ($user) {
         return $user->qualifications->count();
     });
@@ -495,26 +493,21 @@ class ReportController extends Controller
     return response()->stream(function () use ($users, $maxQualifications) {
         $handle = fopen('php://output', 'w');
 
-        // Define CSV headers
         $csvHeaders = ['Employee Name', 'Gender', 'Age'];
         for ($i = 1; $i <= $maxQualifications; $i++) {
             $csvHeaders[] = 'Qualification ' . $i;
         }
         fputcsv($handle, $csvHeaders);
 
-        // Loop through users and add each to the CSV
         foreach ($users as $user) {
             $employeeName = $user->first_name . ' ' . $user->last_name;
             $gender = $user->gender;
             $age = $user->dob ? Carbon::parse($user->dob)->age : 'Unknown';
 
-            // Get the list of qualifications for the user
             $qualificationsForUser = $user->qualifications->pluck('qualification_title')->toArray();
 
-            // Prepare the row data
             $row = [$employeeName, $gender, $age];
 
-            // Add each qualification to the row, filling up to $maxQualifications
             for ($i = 0; $i < $maxQualifications; $i++) {
                 $row[] = $qualificationsForUser[$i] ?? '';
             }
@@ -524,6 +517,19 @@ class ReportController extends Controller
 
         fclose($handle);
     }, 200, $headers);
+}
+
+public function showExports()
+{
+    $user = Auth::user();
+
+    if ($user->role === "supervisor") {
+        $departmentName = $user->department ? $user->department->department_name : 'Unknown Department';
+    } else {
+        $departmentName = 'Not Assigned';
+    }
+
+    return view('show', compact('departmentName'));
 }
 
 }

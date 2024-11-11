@@ -72,17 +72,39 @@
 
     @if (Auth::user()->role === "admin")
 
-        @livewire('export-dropdown')
+    @livewire('export-dropdown')
 
-    @elseif (Auth::user()->role === "supervisor")
-    <div class="h-auto bg-white shadow-md w-auto flex flex-col border mt-6 rounded-3xl">
+    @elseif (Auth::user()->role === "supevisor")
+    @php
+        $departmentName = Auth::user()->department ? Auth::user()->department->department_name : 'Unknown Department';
+    @endphp
+    <div class="h-auto bg-white shadow-md w-auto flex flex-col border mt-6 mb-6 rounded-3xl p-8">
         <header>
             <div class="bg-orange-200 py-4 px-6 rounded-3xl">
-                <h2 class="text-lg font-medium text-orange-700 dark:text-white mb-2">Your Exports</h2>
+                <h2 class="text-lg font-medium text-orange-700 dark:text-white mb-2">Your Exports For The {{ $departmentName }} Department</h2>
             </div>
         </header>
+        <div class="flex items-center gap-4 p-2 border-b border-slate-200 mt-4">
+            @livewire('reports.loading-button-animation', [
+                'label' => 'Export Employee Details',
+                'route' => 'reports.employees.export-department',
+                'departmentName' => $departmentName
+            ])
+            <div class="flex-1 text-slate-600">
+                Export a detailed report of employee data, including names, roles, and other relevant information.
+            </div>
+        </div>
+        <div class="flex items-center gap-4 p-2 border-b border-slate-200">
+            @livewire('reports.loading-button-animation', [
+                'label' => 'Export Employee Qualification Details',
+                'route' => 'reports.qualifications.export-department',
+                'departmentName' => $departmentName
+            ])
+            <div class="flex-1 text-slate-600">
+                Export a detailed report of employee qualification information.
+            </div>
+        </div>
     </div>
-
     @elseif (Auth::user()->role === 'employee')
     <div class="h-auto bg-white shadow-md w-auto flex flex-col border mt-6 rounded-3xl">
         <header>
