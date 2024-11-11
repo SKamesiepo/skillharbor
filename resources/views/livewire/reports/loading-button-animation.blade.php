@@ -2,7 +2,7 @@
     <button
         wire:click="triggerExport"
         wire:loading.attr="disabled"
-        class="flex items-center rounded-md p-3 transition-all hover:bg-sky-200 hover:text-sky-700 hover:font-medium"
+        class="w-48 rounded-md border border-slate-300 px-4 py-2 text-center text-sm text-sky-700 shadow-sm transition hover:bg-sky-700 hover:text-white hover:shadow-lg focus:bg-sky-700 focus:text-white active:bg-sky-700 active:text-white disabled:opacity-50"
     >
         <div wire:loading.remove>
             {{ $label }}

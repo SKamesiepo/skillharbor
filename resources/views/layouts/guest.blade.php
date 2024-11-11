@@ -13,7 +13,7 @@
         <link href="https://cdn.jsdelivr.net/npm/sf-mono-webfont@1.0.0/stylesheet.min.css" rel="stylesheet">
 
         <!--Favicon-->
-        <link rel="shortcut icon" href="{{ asset('assets/logo/logo.png') }}">
+        <link rel="shortcut icon" href="{{ asset('assets/logo/mainlogo.png') }}">
         <style>
             [x-cloak] {
                 display: none !important;

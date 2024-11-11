@@ -70,54 +70,10 @@
         </div>
     </div>
 
-
-    <!-- Export Buttons with Descriptions -->
     @if (Auth::user()->role === "admin")
-    <div class="h-auto bg-white shadow-md w-auto flex flex-col border mt-6 rounded-3xl">
-        <header>
-            <div class="bg-orange-200 py-4 px-6 rounded-t-3xl">
-                <h2 class="text-lg font-medium text-orange-700 dark:text-white mb-2">Organisational Exports</h2>
-            </div>
-        </header>
-        <!-- Export Employees Button -->
-        <div class="flex items-center gap-4 p-4 border-b border-slate-200">
-            <div class="w-48">
-                @livewire('reports.loading-button-animation', [
-                    'label' => 'Export Employees',
-                    'route' => 'reports.employees.export'
-                ])
-            </div>
-            <div class="flex-1 text-slate-600">
-                Export a detailed report of employee data, including names, roles, and other relevant information.
-            </div>
-        </div>
 
-        <!-- Export Qualifications Button -->
-        <div class="flex items-center gap-4 p-4 border-b border-slate-200">
-            <div class="w-48">
-                @livewire('reports.loading-button-animation', [
-                    'label' => 'Export Qualifications',
-                    'route' => 'reports.qualifications.export'
-                ])
-            </div>
-            <div class="flex-1 text-slate-600">
-                Export a detailed report of employee qualification information.
-            </div>
-        </div>
+        @livewire('export-dropdown')
 
-        <!-- Export Skills Button -->
-        <div class="flex items-center gap-4 p-4 ">
-            <div class="w-48">
-                @livewire('reports.loading-button-animation', [
-                    'label' => 'Export Skills',
-                    'route' => 'reports.skills.export'
-                ])
-            </div>
-            <div class="flex-1 text-slate-600">
-                Export a comprehensive report of skills assessments, detailing individual performance and skill levels.
-            </div>
-        </div>
-    </div>
     @elseif (Auth::user()->role === "supervisor")
     <div class="h-auto bg-white shadow-md w-auto flex flex-col border mt-6 rounded-3xl">
         <header>
@@ -136,9 +92,6 @@
         </header>
     </div>
     @endif
-
-
-
 </x-app-layout>
 
 <script>

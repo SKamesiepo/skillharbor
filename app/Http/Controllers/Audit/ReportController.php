@@ -292,8 +292,8 @@ class ReportController extends Controller
                 'Supervisor Rating',
             ]);
 
-            User::with(['jcp.skills', 'deparment.division'])
-                ->whereHas('deparment.division', function ($query) use ($divisionName) {
+            User::with(['jcp.skills', 'department.division'])
+                ->whereHas('department.division', function ($query) use ($divisionName) {
                     $query->where('division_name', $divisionName);
                 })
                 ->chunk(25, function ($employees) use ($handle) {
@@ -336,7 +336,7 @@ class ReportController extends Controller
     }
 
     public function exportDivisionQualifications(Request $request)
-{
+    {
     $divisionName = $request->query('divisionName');
 
     if (!$divisionName) {
@@ -353,8 +353,8 @@ class ReportController extends Controller
         'Expires'             => '0',
     ];
 
-    $users = User::with(['qualifications', 'deparment.division'])
-                 ->whereHas('deparment.division', function ($query) use ($divisionName) {
+    $users = User::with(['qualifications', 'department.division'])
+                 ->whereHas('department.division', function ($query) use ($divisionName) {
                      $query->where('division_name', $divisionName);
                  })
                  ->get();
@@ -384,6 +384,141 @@ class ReportController extends Controller
             for ($i = 0; $i < $maxQualifications; $i++) {
                 $row[] = $qualificationsForUser[$i] ?? '';
             }
+            fputcsv($handle, $row);
+        }
+
+        fclose($handle);
+    }, 200, $headers);
+    }
+
+    public function exportDepartmentEmployees(Request $request)
+    {
+        $departmentName = $request->query('departmentName');
+    
+        if (!$departmentName) {
+            return redirect()->back()->with('error', 'Department name is required.');
+        }
+    
+        $filename = Str::slug($departmentName, '_') . '_employee_report.csv';
+    
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+    
+        return response()->stream(function () use ($departmentName) {
+            $handle = fopen('php://output', 'w');
+    
+            fputcsv($handle, [
+                'Employee Name',
+                'Job Description',
+                'Skills (with required ratings)',
+                'User Rating',
+                'Supervisor Rating',
+            ]);
+    
+            User::with(['jcp.skills', 'department'])
+                ->whereHas('department', function ($query) use ($departmentName) {
+                    $query->where('department_name', $departmentName);
+                })
+                ->chunk(25, function ($employees) use ($handle) {
+                    foreach ($employees as $employee) {
+                        $fullName = $employee->first_name . ' ' . $employee->last_name;
+    
+                        $activeJcp = $employee->jcp()->where('is_active', 1)->first();
+    
+                        if ($activeJcp) {
+                            $jobDescription = $activeJcp->position_title ?? 'No Job Description';
+    
+                            $skills = $activeJcp->skills->map(function ($skill) {
+                                return $skill->skill_title . ' (Required: ' . $skill->pivot->required_level . ')';
+                            })->implode(', ');
+    
+                            $userRatings = $activeJcp->skills->pluck('pivot.user_rating')->implode(', ');
+                            $supervisorRatings = $activeJcp->skills->pluck('pivot.supervisor_rating')->implode(', ');
+                        } else {
+                            $jobDescription = 'No active JCP';
+                            $skills = 'No Skills';
+                            $userRatings = 'No Ratings';
+                            $supervisorRatings = 'No Supervisor Ratings';
+                        }
+    
+                        $data = [
+                            $fullName,
+                            $jobDescription,
+                            $skills,
+                            $userRatings,
+                            $supervisorRatings,
+                        ];
+    
+                        fputcsv($handle, $data);
+                    }
+                });
+    
+            fclose($handle);
+        }, 200, $headers);
+    }
+
+    public function exportDepartmentQualifications(Request $request)
+{
+    $departmentName = $request->query('departmentName');
+
+    if (!$departmentName) {
+        return redirect()->back()->with('error', 'Department name is required.');
+    }
+
+    $filename = Str::slug($departmentName, '_') . '_employee_qualifications_report.csv';
+
+    $headers = [
+        'Content-Type'        => 'text/csv',
+        'Content-Disposition' => "attachment; filename=\"$filename\"",
+        'Pragma'              => 'no-cache',
+        'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+        'Expires'             => '0',
+    ];
+
+    // Query users associated with the specified department
+    $users = User::with(['qualifications', 'department'])
+                 ->whereHas('department', function ($query) use ($departmentName) {
+                     $query->where('department_name', $departmentName);
+                 })
+                 ->get();
+
+    // Determine the maximum number of qualifications any user has for CSV formatting
+    $maxQualifications = $users->max(function ($user) {
+        return $user->qualifications->count();
+    });
+
+    return response()->stream(function () use ($users, $maxQualifications) {
+        $handle = fopen('php://output', 'w');
+
+        // Define CSV headers
+        $csvHeaders = ['Employee Name', 'Gender', 'Age'];
+        for ($i = 1; $i <= $maxQualifications; $i++) {
+            $csvHeaders[] = 'Qualification ' . $i;
+        }
+        fputcsv($handle, $csvHeaders);
+
+        // Loop through users and add each to the CSV
+        foreach ($users as $user) {
+            $employeeName = $user->first_name . ' ' . $user->last_name;
+            $gender = $user->gender;
+            $age = $user->dob ? Carbon::parse($user->dob)->age : 'Unknown';
+
+            // Get the list of qualifications for the user
+            $qualificationsForUser = $user->qualifications->pluck('qualification_title')->toArray();
+
+            // Prepare the row data
+            $row = [$employeeName, $gender, $age];
+
+            // Add each qualification to the row, filling up to $maxQualifications
+            for ($i = 0; $i < $maxQualifications; $i++) {
+                $row[] = $qualificationsForUser[$i] ?? '';
+            }
+
             fputcsv($handle, $row);
         }
 
